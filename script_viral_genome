@@ -1,0 +1,57 @@
+TASK 1
+
+download human reference genome (hg19) 
+ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/chromosomes/README.txt
+rsync -avzP rsync://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/ .
+
+#chr*_random and chrUn_* were not considered
+gunzip *.fa.gz
+cat *.fa > human_hg19.fa
+export PATH=/Users/katja/Desktop/MyDocuments/Programms/bwa-0.7.10/:$PATH
+cd data/bwa/hg19
+bwa index -p database/bwaidx -a bwtsw human_hg19.fa
+bwa aln -t 4 database/bwaidx ../infectedHuman.fastq > infectedHuman.bwa
+bwa samse database/bwaidx infectedHuman.bwa ../infectedHuman.fastq > infectedHuman_aligned.sam
+gawk -v OFS="\n" '{ if ($3 == "*"){print ">" $1,$10;}}' infectedHuman_aligned.sam > unaligned_reads.fasta
+wc -l unaligned_reads.fasta #52884
+
+cd data/bwa/hg19_placed
+#chr*_random and other placed sequences were considered
+bwa index -p database/bwaidx -a bwtsw localized_hg19.fa
+bwa aln -t 4 database/bwaidx ../../infectedHuman.fastq > infectedHuman_placed.bwa
+bwa samse database/bwaidx infectedHuman_localized.bwa ../../infectedHuman.fastq > infectedHuman_aligned_placed.sam
+gawk -v OFS="\n" '{ if ($3 == "*"){print ">" $1,$10;}}' infectedHuman_aligned_placed.sam > unaligned_reads_placed.fasta
+wc -l unaligned_reads_placed.fasta #52790
+
+
+cd data/bwa/hg19_all
+#all sequences were considered
+bwa index -p database/bwaidx -a bwtsw human_hg19_all.fa
+bwa aln -t 4 database/bwaidx ../../infectedHuman.fastq > infectedHuman_all.bwa
+bwa samse database/bwaidx infectedHuman_all.bwa ../../infectedHuman.fastq > infectedHuman_aligned_all.sam
+gawk -v OFS="\n" '{ if ($3 == "*"){print ">" $1,$10;}}' infectedHuman_aligned_all.sam > unaligned_reads_all.fasta
+wc -l unaligned_reads_all.fasta #52782
+
+
+
+
+
+
+export PATH=/Users/katja/Desktop/MyDocuments/Programms/velvet_1.2.10/:$PATH
+#aligning to contings
+velveth velvet/ 21 -fasta -short bwa/hg19/unaligned_reads.fasta
+#This fasta file contains the sequences of the contigs longer than 2k, where k is the word-length used in velveth.
+velvetg velvet/ -cov_cutoff 3 -read_trkg yes -min_contig_lgth 50
+velvetg velvet/ -cov_cutoff 5 -min_contig_lgth 50
+
+
+export PATH=/Users/katja/Desktop/MyDocuments/Programms/ncbi-blast-2.2.30+/bin/:$PATH
+#ncbi file for viral genomes
+http://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?tool=portal&sendto=on&log$=seqview&db=nuccore&dopt=fasta&sort=&query_key=4&qty=6207&filter=all
+cd /Users/katja/Desktop/MyDocuments/Uni/Master/4.Semester/Biodiv/Uebung/assignment/data/blast
+mkdir db
+cd db
+#place downloaded sequence from ncbi
+makeblastdb -in viral_genomes.fasta -dbtype nucl
+blastn -db viral_genomes.fasta -query ../../bwa/hg19/unaligned_reads.fasta -out unaligned_reads.fa
+blastn -db viral_genomes.fasta -query ../../bwa/hg19_placed/unaligned_reads_placed.fasta -out unaligned_reads_placed.xml -outfmt 5
