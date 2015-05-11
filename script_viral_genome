@@ -4,7 +4,7 @@ download human reference genome (hg19)
 ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/chromosomes/README.txt
 rsync -avzP rsync://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/ .
 
-#chr*_random and chrUn_* were not considered
+#######chr*_random and chrUn_* were not considered
 gunzip *.fa.gz
 cat *.fa > human_hg19.fa
 export PATH=/Users/katja/Desktop/MyDocuments/Programms/bwa-0.7.10/:$PATH
@@ -13,24 +13,24 @@ bwa index -p database/bwaidx -a bwtsw human_hg19.fa
 bwa aln -t 4 database/bwaidx ../infectedHuman.fastq > infectedHuman.bwa
 bwa samse database/bwaidx infectedHuman.bwa ../infectedHuman.fastq > infectedHuman_aligned.sam
 gawk -v OFS="\n" '{ if ($3 == "*"){print ">" $1,$10;}}' infectedHuman_aligned.sam > unaligned_reads.fasta
-wc -l unaligned_reads.fasta #52884
+wc -l unaligned_reads.fasta #52884 -> number of reads 52884/2
 
 cd data/bwa/hg19_placed
-#chr*_random and other placed sequences were considered
+#######chr*_random and other placed sequences were considered
 bwa index -p database/bwaidx -a bwtsw localized_hg19.fa
 bwa aln -t 4 database/bwaidx ../../infectedHuman.fastq > infectedHuman_placed.bwa
 bwa samse database/bwaidx infectedHuman_localized.bwa ../../infectedHuman.fastq > infectedHuman_aligned_placed.sam
 gawk -v OFS="\n" '{ if ($3 == "*"){print ">" $1,$10;}}' infectedHuman_aligned_placed.sam > unaligned_reads_placed.fasta
-wc -l unaligned_reads_placed.fasta #52790
+wc -l unaligned_reads_placed.fasta #52790 -> number of reads 52790/2
 
 
 cd data/bwa/hg19_all
-#all sequences were considered
+#######all sequences were considered
 bwa index -p database/bwaidx -a bwtsw human_hg19_all.fa
 bwa aln -t 4 database/bwaidx ../../infectedHuman.fastq > infectedHuman_all.bwa
 bwa samse database/bwaidx infectedHuman_all.bwa ../../infectedHuman.fastq > infectedHuman_aligned_all.sam
 gawk -v OFS="\n" '{ if ($3 == "*"){print ">" $1,$10;}}' infectedHuman_aligned_all.sam > unaligned_reads_all.fasta
-wc -l unaligned_reads_all.fasta #52782
+wc -l unaligned_reads_all.fasta #52782  -> number of reads 52782/2
 
 
 
@@ -43,6 +43,7 @@ velveth velvet/ 21 -fasta -short bwa/hg19/unaligned_reads.fasta
 #This fasta file contains the sequences of the contigs longer than 2k, where k is the word-length used in velveth.
 velvetg velvet/ -cov_cutoff 3 -read_trkg yes -min_contig_lgth 50
 velvetg velvet/ -cov_cutoff 5 -min_contig_lgth 50
+
 
 
 export PATH=/Users/katja/Desktop/MyDocuments/Programms/ncbi-blast-2.2.30+/bin/:$PATH
