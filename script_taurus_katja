@@ -1,0 +1,33 @@
+###TASK 2 unmasked
+http://www.ensembl.org/Bos_taurus/Info/Index
+cd /Users/katja/Desktop/MyDocuments/Uni/Master/4.Semester/Biodiv/Uebung/assignment/taurus/data/bos_taurus/dna 
+gunzip *.fa.gz
+cat *.fa > taurus_genome.fasta
+cd ../../bwa/database
+bwa index -p database/bwaidx -a bwtsw ../data/bos_taurus/unmasked_taurus.fasta
+
+#convert sra into fastq
+export PATH=/Users/katja/Desktop/MyDocuments/Programms/sratoolkit.2.5.0-mac64/bin/:$PATH
+fastq-dump SRR1619462.sra 
+
+#TRIM THE READS
+#die basic statistik sieht komisch aus!!!!! (sequence length und per base quality)
+java -jar /Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 SRR1619462.fastq SRR1619462_trimmed.fastq TRAILING:20 HEADCROP:11
+java -jar /Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 SRR1619462.fastq SRR1619462_trimmed.fastq ILLUMINACLIP:/Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/adapters/NexteraPE-PE.fa:2:30:10 TRAILING:30 HEADCROP:10 
+
+#sieht besser aus
+java -jar /Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 SRR1619462.fastq SRR1619462_trimmed.fastq ILLUMINACLIP:/Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/adapters/NexteraPE-PE.fa:2:30:10 CROP:110 TRAILING:2 HEADCROP:10 
+
+#sieht noch besser aus aber sequence length 22-105 (was machen wir mit 22??? wegscheimeissen? )
+# ps 22 entsteht weil HEADCROP:10 
+java -jar /Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 SRR1619462.fastq SRR1619462_trimmed.fastq CROP:115 TRAILING:2 HEADCROP:10 
+
+#MAPPING
+bwa mem -t 4 database/bwaidx ../data/SRR1619462.fastq > mapped_taurus.sam
+bwa mem -t 4 database/bwaidx ../data/SRR1619462_trimmed.fastq > mapped_taurus_trimmed.sam
+gawk -v OFS="\n" '{ if ($2 == 4){print ">" $1,$10;}}' mapped_taurus.sam > unmapped_taurus.fasta
+wc -l unmapped_taurus.fasta #893496/2 = 446748
+gawk -v OFS="\n" '{ if ($2 == 4){print ">" $1,$10;}}' mapped_taurus_trimmed.sam > unmapped_taurus_trimmed.fasta
+wc -l unmapped_taurus_trimmed.fasta #905732/2 = 452866 
+
+#komisch, dass es mehr ungemappte reads nach dem trimming gibts
