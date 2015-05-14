@@ -23,11 +23,20 @@ java -jar /Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/trimmomati
 java -jar /Users/katja/Desktop/MyDocuments/Programms/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 SRR1619462.fastq SRR1619462_trimmed.fastq CROP:115 TRAILING:2 HEADCROP:10 
 
 #MAPPING
+#MEM
 bwa mem -t 4 database/bwaidx ../data/SRR1619462.fastq > mapped_taurus.sam
 bwa mem -t 4 database/bwaidx ../data/SRR1619462_trimmed.fastq > mapped_taurus_trimmed.sam
 gawk -v OFS="\n" '{ if ($2 == 4){print ">" $1,$10;}}' mapped_taurus.sam > unmapped_taurus.fasta
-wc -l unmapped_taurus.fasta #893496/2 = 446748
+wc -l unmapped_taurus.fasta #893496/2 = 446.748
 gawk -v OFS="\n" '{ if ($2 == 4){print ">" $1,$10;}}' mapped_taurus_trimmed.sam > unmapped_taurus_trimmed.fasta
-wc -l unmapped_taurus_trimmed.fasta #905732/2 = 452866 
-
+wc -l unmapped_taurus_trimmed.fasta #905732/2 = 452.866 
 #komisch, dass es mehr ungemappte reads nach dem trimming gibts
+
+#ALN
+bwa aln -t 4 database/bwaidx SRR1619462.fastq > mapped_taurus_aln.bwa
+bwa samse database/bwaidx mapped_taurus_aln.bwa SRR1619462.fastq > mapped_taurus_aln.sam
+gawk -v OFS="\n" '{ if ($2 == 4){print ">" $1,$10;}}' mapped_taurus_aln.sam > unmapped_taurus_aln.fasta
+wc -l unmapped_taurus_aln.fasta #1251306/2 = 625.653
+
+#Bei ALN bekommt man mehr ungemappte reads
+
